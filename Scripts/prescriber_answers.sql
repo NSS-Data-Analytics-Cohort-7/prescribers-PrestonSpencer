@@ -63,9 +63,27 @@ ON d.drug_name = p.drug_name
 GROUP BY d.generic_name, p.total_drug_cost, p.total_30_day_fill_count
 ORDER BY day_cost DESC; */
 
+/* 4. a. For each drug in the drug table, return the drug name and then a column named 'drug_type' which says 'opioid' for drugs which have opioid_drug_flag = 'Y', says 'antibiotic' for those drugs which have antibiotic_drug_flag = 'Y', and says 'neither' for all other drugs.
+ANSWER: */
+
+/* SELECT drug_name,
+    CASE WHEN opioid_drug_flag = 'Y' THEN 'opioid'
+    WHEN antibiotic_drug_flag = 'Y' THEN 'antibiotic'
+    ELSE 'neither' END AS drug_type
+FROM drug; */
 
 
+/* b. Building off of the query you wrote for part a, determine whether more was spent (total_drug_cost) on opioids or on antibiotics. Hint: Format the total costs as MONEY for easier comparision.
+ANSWER: */
 
+SELECT d.drug_name, SUM(p.total_drug_cost) AS MONEY,
+    CASE WHEN d.opioid_drug_flag = 'Y' THEN 'opioid'
+    WHEN d.antibiotic_drug_flag = 'Y' THEN 'antibiotic'
+    ELSE 'neither' END AS drug_type
+FROM drug AS d
+INNER JOIN prescription AS p
+GROUP BY d.drug_name
+ORDER BY MONEY DESC;
 
 
 
