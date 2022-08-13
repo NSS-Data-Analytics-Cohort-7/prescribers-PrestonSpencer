@@ -27,7 +27,7 @@ GROUP BY pr.specialty_description
 ORDER BY total_claim DESC; 
 
 /* b. Which specialty had the most total number of claims for opioids?
-ANSWER: Nurse Practitioner, 9,551 claims */
+ANSWER: Nurse Practitioner, 900,845 claims */
 
 SELECT pr.specialty_description, SUM(pn.total_claim_count) AS total_claim, COUNT(d.opioid_drug_flag) AS total_opioid 
 FROM prescriber AS pr
@@ -62,20 +62,13 @@ ORDER BY total_cost DESC;
 
 /* b. Which drug (generic_name) has the hightest total cost per day? 
 *Bonus: Round your cost per day column to 2 decimal places. Google ROUND to see how this works. 
-ANSWER: ASFOTASE ALFA, $4,659.20*/
+ANSWER: C1 Esterase Inhibitor, $3,495.22 */
 
-SELECT d.generic_name, ROUND((p.total_drug_cost/p.total_30_day_fill_count)/30,2) AS day_cost
-FROM drug AS d
-INNER JOIN prescription AS p
+SELECT d.generic_name, ROUND(sum(p.total_drug_cost)/sum(p.total_day_supply),2) AS day_cost
+FROM prescription AS p
+LEFT JOIN drug AS d
 ON d.drug_name = p.drug_name
-GROUP BY d.generic_name, p.total_drug_cost, p.total_30_day_fill_count
-ORDER BY day_cost DESC; 
-
-SELECT d.generic_name, ROUND(p.total_drug_cost/p.total_day_supply,2) AS day_cost
-FROM drug AS d
-INNER JOIN prescription AS p
-ON d.drug_name = p.drug_name
-GROUP BY d.generic_name, p.total_drug_cost, p.total_day_supply
+GROUP BY d.generic_name
 ORDER BY day_cost DESC; 
 
 /* 4. a. For each drug in the drug table, return the drug name and then a column named 'drug_type' which says 'opioid' for drugs which have opioid_drug_flag = 'Y', says 'antibiotic' for those drugs which have antibiotic_drug_flag = 'Y', and says 'neither' for all other drugs.
@@ -93,7 +86,7 @@ Neither - $2,972,698,710.23
 Opioid - $105,080,626.37
 Antibiotic - $38,435,121.26 */
 
-SELECT CAST(sum(total_cost) AS MONEY), drug_type
+SELECT CAST(sum(total_cost) AS MONEY) AS total_cost, drug_type
 FROM
     (SELECT drug_name, total_drug_cost AS total_cost,
     CASE WHEN opioid_drug_flag = 'Y' THEN 'opioid'
@@ -106,10 +99,6 @@ GROUP BY drug_type;
 
 /* 5. a. How many CBSAs are in Tennessee? Warning: The cbsa table contains information for all states, not just Tennessee. 
 ANSWER: 10  */
-
-SELECT COUNT(cbsaname)
-FROM cbsa
-WHERE cbsaname LIKE '%, TN';
 
 SELECT DISTINCT cbsaname
 FROM cbsa
@@ -149,15 +138,15 @@ ORDER BY p.population DESC;
 /* 6. a. Find all rows in the prescription table where total_claims is at least 3000. Report the drug_name and the total_claim_count. 
 ANSWER: */
 
-SELECT drug_name, SUM(total_claim_count) AS total_claims
+SELECT drug_name, total_claim_count
 FROM prescription 
 WHERE total_claim_count >= 3000
-GROUP BY drug_name;
+GROUP BY drug_name, total_claim_count;
 
 /* b. For each instance that you found in part a, add a column that indicates whether the drug is an opioid.
 ANSWER: */ 
 
-SELECT p.drug_name, SUM(p.total_claim_count) AS total_claims,
+SELECT p.drug_name, p.total_claim_count,
     CASE WHEN d.opioid_drug_flag = 'Y' THEN 'OPIOID'
     WHEN d.opioid_drug_flag = 'N' THEN 'NOT OPIOID'
     ELSE 'NEITHER' END AS opioid_yes_no
@@ -165,7 +154,7 @@ FROM prescription AS p
 INNER JOIN drug AS d
 USING (drug_name)
 WHERE p.total_claim_count >= 3000
-GROUP BY p.drug_name, d.opioid_drug_flag;
+GROUP BY p.drug_name, p.total_claim_count, d.opioid_drug_flag;
 
 /* c. Add another column to you answer from the previous part which gives the prescriber first and last name associated with each row. */
 
@@ -204,20 +193,18 @@ AND p.nppes_provider_city = 'NASHVILLE'
 AND p.specialty_description = 'Pain Management'
 GROUP BY d.drug_name, p.npi, pn.total_claim_count;
 
-SELECT p.npi, d.drug_name, sub.total_claim_count
+SELECT npi, drug_name, sub.total_claim_count
 FROM
-    (SELECT d.drug_name, pn.total_claim_count
+    (SELECT d.drug_name AS drug_name, pn.total_claim_count
     FROM drug AS d
     LEFT JOIN prescription AS pn
     USING (drug_name)) AS sub
-FROM prescriber AS p
-CROSS JOIN drug AS d
-INNER JOIN prescription AS pn
-USING (drug_name)
-WHERE d.opioid_drug_flag = 'Y'
-AND p.nppes_provider_city = 'NASHVILLE'
-AND p.specialty_description = 'Pain Management'
-GROUP BY d.drug_name, p.npi, pn.total_claim_count;
+FROM prescriber 
+CROSS JOIN drug 
+WHERE opioid_drug_flag = 'Y'
+AND nppes_provider_city = 'NASHVILLE'
+AND specialty_description = 'Pain Management'
+GROUP BY drug_name, npi, sub.total_claim_count;
 
 /* c. Finally, if you have not done so already, fill in any missing values for total_claim_count with 0. Hint - Google the COALESCE function. */
                            
