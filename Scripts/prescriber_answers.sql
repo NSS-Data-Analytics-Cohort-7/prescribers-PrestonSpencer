@@ -39,8 +39,16 @@ WHERE d.opioid_drug_flag = 'Y'
 GROUP BY pr.specialty_description
 ORDER BY total_opioid DESC, total_claim; 
 
-/* c. Challenge Question: Are there any specialties that appear in the prescriber table that have no associated prescriptions in the prescription table?
-d. Difficult Bonus: Do not attempt until you have solved all other problems! For each specialty, report the percentage of total claims by that specialty which are for opioids. Which specialties have a high percentage of opioids? */
+/* c. Challenge Question: Are there any specialties that appear in the prescriber table that have no associated prescriptions in the prescription table? */
+
+SELECT pr.specialty_description, pn.drug_name
+FROM prescriber AS pr
+LEFT JOIN prescription AS pn
+USING (npi)
+WHERE pn.drug_name IS NULL
+GROUP BY pr.specialty_description, pn.drug_name;
+
+/* d. Difficult Bonus: Do not attempt until you have solved all other problems! For each specialty, report the percentage of total claims by that specialty which are for opioids. Which specialties have a high percentage of opioids? */
 
 /* 3. a. Which drug (generic_name) had the highest total drug cost?
 ANSWER: Insulin, $104,264,066.35 */
@@ -141,14 +149,15 @@ ORDER BY p.population DESC;
 /* 6. a. Find all rows in the prescription table where total_claims is at least 3000. Report the drug_name and the total_claim_count. 
 ANSWER: */
 
-SELECT drug_name, total_claim_count
+SELECT drug_name, SUM(total_claim_count) AS total_claims
 FROM prescription 
-WHERE total_claim_count >= 3000;
+WHERE total_claim_count >= 3000
+GROUP BY drug_name;
 
 /* b. For each instance that you found in part a, add a column that indicates whether the drug is an opioid.
 ANSWER: */ 
 
-SELECT p.drug_name, p.total_claim_count,
+SELECT p.drug_name, SUM(p.total_claim_count) AS total_claims,
     CASE WHEN d.opioid_drug_flag = 'Y' THEN 'OPIOID'
     WHEN d.opioid_drug_flag = 'N' THEN 'NOT OPIOID'
     ELSE 'NEITHER' END AS opioid_yes_no
@@ -156,7 +165,7 @@ FROM prescription AS p
 INNER JOIN drug AS d
 USING (drug_name)
 WHERE p.total_claim_count >= 3000
-GROUP BY p.drug_name, p.total_claim_count, d.opioid_drug_flag;
+GROUP BY p.drug_name, d.opioid_drug_flag;
 
 /* c. Add another column to you answer from the previous part which gives the prescriber first and last name associated with each row. */
 
@@ -176,11 +185,26 @@ GROUP BY p.drug_name, p.total_claim_count, d.opioid_drug_flag, pr.nppes_provider
 
 a. First, create a list of all npi/drug_name combinations for pain management specialists (specialty_description = 'Pain Management') in the city of Nashville (nppes_provider_city = 'NASHVILLE'), where the drug is an opioid (opiod_drug_flag = 'Y'). Warning: Double-check your query before running it. You will only need to use the prescriber and drug tables since you don't need the claims numbers yet. */
 
+SELECT d.drug_name, p.npi
+FROM drug AS d
+CROSS JOIN prescriber AS p
+WHERE d.opioid_drug_flag = 'Y'
+AND p.nppes_provider_city = 'NASHVILLE'
+AND p.specialty_description = 'Pain Management';
 
+/* b. Next, report the number of claims per drug per prescriber. Be sure to include all combinations, whether or not the prescriber had any claims. You should report the npi, the drug name, and the number of claims (total_claim_count). */
 
-/* b. Next, report the number of claims per drug per prescriber. Be sure to include all combinations, whether or not the prescriber had any claims. You should report the npi, the drug name, and the number of claims (total_claim_count).
+SELECT p.npi, d.drug_name, pn.total_claim_count
+FROM prescriber AS p
+CROSS JOIN drug AS d
+INNER JOIN prescription AS pn
+USING (drug_name)
+WHERE d.opioid_drug_flag = 'Y'
+AND p.nppes_provider_city = 'NASHVILLE'
+AND p.specialty_description = 'Pain Management'
+GROUP BY d.drug_name, p.npi, pn.total_claim_count;
 
+SELECT d.drug_name, pn.total
 
-
-c. Finally, if you have not done so already, fill in any missing values for total_claim_count with 0. Hint - Google the COALESCE function. */
+/* c. Finally, if you have not done so already, fill in any missing values for total_claim_count with 0. Hint - Google the COALESCE function. */
                            
