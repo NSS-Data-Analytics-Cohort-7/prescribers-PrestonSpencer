@@ -197,14 +197,27 @@ AND p.specialty_description = 'Pain Management';
 SELECT p.npi, d.drug_name, pn.total_claim_count
 FROM prescriber AS p
 CROSS JOIN drug AS d
-INNER JOIN prescription AS pn
+LEFT JOIN prescription AS pn
 USING (drug_name)
 WHERE d.opioid_drug_flag = 'Y'
 AND p.nppes_provider_city = 'NASHVILLE'
 AND p.specialty_description = 'Pain Management'
 GROUP BY d.drug_name, p.npi, pn.total_claim_count;
 
-SELECT d.drug_name, pn.total
+SELECT p.npi, d.drug_name, sub.total_claim_count
+FROM
+    (SELECT d.drug_name, pn.total_claim_count
+    FROM drug AS d
+    LEFT JOIN prescription AS pn
+    USING (drug_name)) AS sub
+FROM prescriber AS p
+CROSS JOIN drug AS d
+INNER JOIN prescription AS pn
+USING (drug_name)
+WHERE d.opioid_drug_flag = 'Y'
+AND p.nppes_provider_city = 'NASHVILLE'
+AND p.specialty_description = 'Pain Management'
+GROUP BY d.drug_name, p.npi, pn.total_claim_count;
 
 /* c. Finally, if you have not done so already, fill in any missing values for total_claim_count with 0. Hint - Google the COALESCE function. */
                            
