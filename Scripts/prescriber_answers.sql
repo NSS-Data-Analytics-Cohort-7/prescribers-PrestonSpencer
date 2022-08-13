@@ -80,27 +80,56 @@ SELECT drug_name,
 FROM drug; 
 
 /* b. Building off of the query you wrote for part a, determine whether more was spent (total_drug_cost) on opioids or on antibiotics. Hint: Format the total costs as MONEY for easier comparision.
-ANSWER: */
+ANSWER: 
+Neither - $2,972,698,710.23
+Opioid - $105,080,626.37
+Antibiotic - $38,435,121.26 */
 
-SELECT d.drug_name, FORMAT(SUM(p.total_drug_cost,'C') AS total_cost,
-    CASE WHEN d.opioid_drug_flag = 'Y' THEN 'opioid'
-    WHEN d.antibiotic_drug_flag = 'Y' THEN 'antibiotic'
+SELECT CAST(sum(total_cost) AS MONEY), drug_type
+FROM
+    (SELECT drug_name, total_drug_cost AS total_cost,
+    CASE WHEN opioid_drug_flag = 'Y' THEN 'opioid'
+    WHEN antibiotic_drug_flag = 'Y' THEN 'antibiotic'
     ELSE 'neither' END AS drug_type
-FROM drug AS d
-INNER JOIN prescription AS p
-GROUP BY d.drug_name
-ORDER BY total_cost; 
+    FROM drug 
+    INNER JOIN prescription 
+    USING (drug_name)) AS sub
+GROUP BY drug_type;
 
 /* 5. a. How many CBSAs are in Tennessee? Warning: The cbsa table contains information for all states, not just Tennessee. 
-ANSWER: 33  */
+ANSWER: 10  */
 
 SELECT COUNT(cbsaname)
 FROM cbsa
-WHERE cbsaname LIKE '%TN';
-                           
-/* b. Which cbsa has the largest combined population? Which has the smallest? Report the CBSA name and total population. */
+WHERE cbsaname LIKE '%, TN';
 
+SELECT DISTINCT cbsaname
+FROM cbsa
+INNER JOIN fips_county
+USING (fipscounty)
+WHERE state = 'TN';
                            
+/* b. Which cbsa has the largest combined population? Which has the smallest? Report the CBSA name and total population. 
+ANSWER: 
+Largest - Nashville-Davidson-Murfreesboro-Franklin, TN - 1,830,410
+Smallest - Morristown, TN - 116,352 */
+
+SELECT c.cbsaname, SUM(p.population) AS total_pop
+FROM population AS p
+INNER JOIN fips_county AS f
+ON p.fipscounty = f.fipscounty
+INNER JOIN cbsa AS c
+ON f.fipscounty = c.fipscounty
+GROUP BY c.cbsaname
+ORDER BY total_pop DESC;                           
+
+SELECT *
+FROM population;
                            
 /* c. What is the largest (in terms of population) county which is not included in a CBSA? Report the county name and population. */
 
+SELECT *
+FROM cbsa AS c
+LEFT JOIN fips_county AS f
+ON                            
+                           
